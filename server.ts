@@ -24,29 +24,35 @@ async function startServer() {
     res.send("pong");
   });
 
-  // Explicitly serve PWA files with correct MIME types in production
-  // In development, Vite middleware will handle these
-  if (process.env.NODE_ENV === "production") {
-    app.get("/manifest.json", (req, res) => {
-      const prodPath = path.join(__dirname, "dist", "manifest.json");
-      if (fs.existsSync(prodPath)) {
-        res.setHeader("Content-Type", "application/json");
-        res.sendFile(prodPath);
-      } else {
-        res.status(404).send("Manifest not found");
-      }
-    });
+  // Explicitly serve PWA files with correct MIME types
+  app.get("/manifest.json", (req, res) => {
+    const devPath = path.join(__dirname, "public", "manifest.json");
+    const prodPath = path.join(__dirname, "dist", "manifest.json");
+    const filePath = fs.existsSync(prodPath) ? prodPath : devPath;
+    
+    if (fs.existsSync(filePath)) {
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.sendFile(filePath);
+    } else {
+      res.status(404).send("Manifest not found");
+    }
+  });
 
-    app.get("/sw.js", (req, res) => {
-      const prodPath = path.join(__dirname, "dist", "sw.js");
-      if (fs.existsSync(prodPath)) {
-        res.setHeader("Content-Type", "application/javascript");
-        res.sendFile(prodPath);
-      } else {
-        res.status(404).send("Service Worker not found");
-      }
-    });
-  }
+  app.get("/sw.js", (req, res) => {
+    const devPath = path.join(__dirname, "public", "sw.js");
+    const prodPath = path.join(__dirname, "dist", "sw.js");
+    const filePath = fs.existsSync(prodPath) ? prodPath : devPath;
+    
+    if (fs.existsSync(filePath)) {
+      res.setHeader("Content-Type", "application/javascript");
+      res.setHeader("Service-Worker-Allowed", "/");
+      res.setHeader("Cache-Control", "no-cache");
+      res.sendFile(filePath);
+    } else {
+      res.status(404).send("Service Worker not found");
+    }
+  });
 
   app.get("/icon.svg", (req, res) => {
     const devPath = path.join(__dirname, "public", "icon.svg");
@@ -114,6 +120,18 @@ async function startServer() {
 
     // SPA fallback: Serve index.html for any other route
     app.get("*", (req, res) => {
+      // Handle Digital Asset Links for Play Store verification
+      if (req.path === "/.well-known/assetlinks.json") {
+        const assetLinksPath = path.join(distPath, ".well-known", "assetlinks.json");
+        const devAssetLinksPath = path.join(__dirname, "public", ".well-known", "assetlinks.json");
+        const filePath = fs.existsSync(assetLinksPath) ? assetLinksPath : devAssetLinksPath;
+        
+        if (fs.existsSync(filePath)) {
+          res.setHeader("Content-Type", "application/json");
+          return res.sendFile(filePath);
+        }
+      }
+
       const indexPath = path.join(distPath, "index.html");
       if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath);

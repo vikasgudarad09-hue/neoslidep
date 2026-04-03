@@ -1,0 +1,6 @@
+{
+	"appId": "com.neoslide.game",
+	"appName": "NeoSlide",
+	"webDir": "dist",
+	"bundledWebRuntime": false
+}

@@ -1,0 +1,5 @@
+{
+  "name": "Remix: SlideShift Puzzle",
+  "description": "A sliding tile puzzle game where you can upload your own images or solve classic number grids.",
+  "requestFramePermissions": []
+}
